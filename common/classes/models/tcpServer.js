@@ -1,5 +1,7 @@
 import net from 'net';
 import TcpClient from './tcpClient.js';
+import logger from '../../utils/logger/logger.js';
+import { handleErr } from '../../error/handlerErr.js';
 
 // 서버 클래스
 class TcpServer {
@@ -39,7 +41,7 @@ class TcpServer {
     });
 
     this.server.listen(this.context.port, () => {
-      console.log(`SERVER ON - ${this.context.host} : ${this.context.port}`);
+      logger.info(`SERVER ON - ${this.context.host} : ${this.context.port}`);
     });
   }
 
@@ -65,12 +67,13 @@ class TcpServer {
       },
       () => {
         // Distributor 접속종료 이벤트
-        console.log('Distributor와 연결 종료');
+        logger.info('Distributor와 연결 종료');
         this.isConnectedDistributor = false;
       },
       (err) => {
         // Distributor 통신 에러 이벤트
-        console.error('Distributor와 연결 에러: ', err);
+        err.message = 'Distributor 통신 에러: ' + err.message;
+        handleErr(err);
         this.isConnectedDistributor = false;
       },
     );

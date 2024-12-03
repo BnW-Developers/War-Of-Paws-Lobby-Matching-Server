@@ -4,11 +4,9 @@ dotenv.config();
 
 /* ======================= SERVER HOST ========================= */
 export const DISTRIBUTOR_HOST = process.env.DISTRIBUTOR_HOST || 'localhost';
-export const GATE_HOST = process.env.GATE_HOST || 'localhost';
 
 /* ======================= SERVER PORT ========================= */
 export const DISTRIBUTOR_PORT = process.env.DISTRIBUTOR_PORT || '3100';
-export const GATE_PORT = process.env.GATE_PORT || '3000';
 
 /* ============================ D B ============================ */
 export const DB1_NAME = process.env.DB1_NAME || 'db1';

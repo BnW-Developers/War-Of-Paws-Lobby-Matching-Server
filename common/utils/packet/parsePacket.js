@@ -51,14 +51,14 @@ export const parseServerPacket = (socket) => {
   let offset = 0;
 
   // packetType
-  if (socket.buffer.length < offset + config.packet.typeLength) return null;
+  if (socket.buffer.length < offset + config.packet.server.typeLength) return null;
   const packetType = socket.buffer.readUInt16BE(offset);
-  offset += config.packet.typeLength;
+  offset += config.packet.server.typeLength;
 
   // client key length
-  if (socket.buffer.length < offset + 1) return null;
+  if (socket.buffer.length < offset + config.packet.server.clientKeyLength) return null;
   const clientKeyLength = socket.buffer.readUInt16BE(offset);
-  offset += 2;
+  offset += config.packet.server.clientKeyLength;
 
   // client key
   if (socket.buffer.length < offset + clientKeyLength) return null;
@@ -66,13 +66,17 @@ export const parseServerPacket = (socket) => {
   offset += clientKeyLength;
 
   // payload length
-  if (socket.buffer.length < offset + config.packet.payloadLength) return null;
+  if (socket.buffer.length < offset + config.packet.server.payloadLength) return null;
   const payloadLength = socket.buffer.readUInt16BE(offset);
-  offset += config.packet.payloadLength;
+  offset += config.packet.server.payloadLength;
 
   // payload
   if (socket.buffer.length < offset + payloadLength) return null;
   const payload = socket.buffer.subarray(offset, offset + payloadLength);
+  offset += payloadLength;
+
+  // 남은 버퍼를 업데이트
+  socket.buffer = socket.buffer.subarray(offset);
 
   return {
     packetType,

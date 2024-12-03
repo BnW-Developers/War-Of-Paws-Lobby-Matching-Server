@@ -1,4 +1,5 @@
 import logger from '../../../common/utils/logger/logger.js';
+import { createServerPacket } from '../../../common/utils/packet/createPacket.js';
 
 class PacketRouter {
   /**
@@ -55,10 +56,12 @@ class PacketRouter {
 
     if (selectedService) {
       try {
+        // 서버로 보내는 패킷 생성
+        const key = `${socket.remoteAdderss}:${socket.remotePort}`;
+        const serverPacket = createServerPacket(packet.packetType, key, packet.payload);
+
         // 패킷을 선택된 마이크로서비스로 전달
-        selectedService.client.write({
-          packet: packet,
-        });
+        selectedService.client.write(serverPacket);
         return true;
       } catch (error) {
         console.error(`Error routing packet to service ${selectedService.name}:`, error);

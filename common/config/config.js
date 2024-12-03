@@ -16,11 +16,34 @@ import {
   REDIS_PASSWORD,
   REDIS_PORT,
 } from '../constants/env.js';
+import {
+  PACKET_CLIENT_KEY_LENGTH,
+  PACKET_PAYLOAD_LENGTH,
+  PACKET_SEQUENCE,
+  PACKET_TYPE_LENGTH,
+  PACKET_VERSION_LENGTH,
+} from '../constants/header.js';
 
 export const COMMON_CONFIG = {
   distributor: {
     host: DISTRIBUTOR_HOST,
     port: DISTRIBUTOR_PORT,
+  },
+  client: {
+    version: '1.0.1',
+  },
+  packet: {
+    client: {
+      typeLength: PACKET_TYPE_LENGTH,
+      versionLength: PACKET_VERSION_LENGTH,
+      sequence: PACKET_SEQUENCE,
+      payloadLength: PACKET_PAYLOAD_LENGTH,
+    },
+    server: {
+      typeLength: PACKET_TYPE_LENGTH,
+      clientKeyLength: PACKET_CLIENT_KEY_LENGTH,
+      payloadLength: PACKET_PAYLOAD_LENGTH,
+    },
   },
   database: {
     USER_DB: {

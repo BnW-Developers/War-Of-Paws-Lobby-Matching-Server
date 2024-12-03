@@ -1,7 +1,7 @@
 import logger from '../../../common/utils/logger/logger.js';
 import config from '../config/lobby.config.js';
 import PacketRouter from '../route/packetRouter.js';
-import { parsePacket } from '../utils/parser/packetParser.js';
+import { parseC2LobbyPacket } from '../../../common/utils/packet/parsePacket.js';
 
 /**
  * 클라이언트(유저)가 게이트로 연결을 맺고 요청을 보낼 때를 정의
@@ -29,7 +29,7 @@ class C2LEventHandler {
         config.packet.client.typeLength + config.packet.client.versionLength;
 
       while (socket.buffer.length >= typeAndVersionLength) {
-        const packet = parsePacket(socket);
+        const packet = parseC2LobbyPacket(socket);
         console.log('packet: ', packet);
 
         if (!packet) break;

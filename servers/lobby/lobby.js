@@ -8,8 +8,9 @@ import ConnectSessionManager from './sessions/connectSessionManager.js';
 
 class LobbyServer extends TcpServer {
   constructor() {
-    const packetRoutingMap = {};
+    // 연결된 유저들 관리하는 매니저
     const connectSessionManager = new ConnectSessionManager();
+    const packetRoutingMap = {};
     const eventHandler = new C2LEventHandler(packetRoutingMap, connectSessionManager);
     super('lobby', config.lobby.host, config.lobby.port, eventHandler);
 
@@ -28,9 +29,10 @@ class LobbyServer extends TcpServer {
 
   // distributor로 부터 온 microservice와 연결
   handleDistributorData = (jsonData) => {
+    console.log('jsonData: ', jsonData);
     try {
       const data = JSON.parse(jsonData);
-      logger.info(`data: ${JSON.stringify(data, null, 2)}`);
+      logger.info(`data: ${JSON.stringify(data, null)}`);
 
       for (const node of data.microservices) {
         // lobby 서버는 제외

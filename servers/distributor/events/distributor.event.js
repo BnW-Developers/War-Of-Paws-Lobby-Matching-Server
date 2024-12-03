@@ -21,7 +21,7 @@ class DistributorEventHandler {
       // 버퍼를 문자열로 변환 후 JSON 파싱
       const parsedData = JSON.parse(data.toString());
 
-      logger.info(`Parsed Data: ${JSON.stringify(parsedData, null, 2)}`);
+      logger.info(`Parsed Data: ${JSON.stringify(parsedData, null)}`);
 
       this.map[key] = {
         socket: socket,

@@ -36,7 +36,7 @@ export const createServerPacket = (packetType, clientKey, payloadBuffer) => {
   const clientKeyBuffer = Buffer.from(clientKey);
 
   const payloadLengthBuffer = Buffer.alloc(config.packet.server.payloadLength);
-  payloadLengthBuffer.writeUInt16BE(payloadBuffer.lenth);
+  payloadLengthBuffer.writeUInt16BE(payloadBuffer.length);
 
   return Buffer.concat([
     packetTypeBuffer,

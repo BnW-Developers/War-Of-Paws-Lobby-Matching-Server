@@ -23,14 +23,13 @@ class C2LEventHandler {
 
   onData(socket, data) {
     try {
-      console.log(`gate data from ${socket.remoteAddress}:${socket.remotePort}`);
+      console.log(`Lobby data from ${socket.remoteAddress}:${socket.remotePort}`);
       socket.buffer = Buffer.concat([socket.buffer, data]);
       const typeAndVersionLength =
         config.packet.client.typeLength + config.packet.client.versionLength;
 
       while (socket.buffer.length >= typeAndVersionLength) {
         const packet = parseC2LobbyPacket(socket);
-        console.log('packet: ', packet);
 
         if (!packet) break;
 

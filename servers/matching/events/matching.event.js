@@ -10,7 +10,6 @@ class MatchingEventHandler {
 
   onData(socket, data) {
     try {
-      console.log(`Matching 서버에서 받은 데이터: ${data}`);
       socket.buffer = Buffer.concat([socket.buffer, data]);
 
       while (

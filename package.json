@@ -1,0 +1,56 @@
+{
+  "name": "royal-siege-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon ./src/server.js",
+    "dummy1": "nodemon ./src/test/dummy.js",
+    "dummy2": "nodemon ./src/test/dummy2.js",
+    "migrate": "node src/mysql/migration/createSchemas.js",
+    "ls1": "node ./src/test/locationSync/client1.js",
+    "ls2": "node ./src/test/locationSync/client2.js",
+    "ls3": "node ./src/test/locationSync/client3.js",
+    "ls4": "node ./src/test/locationSync/client4.js"
+  },
+  "keywords": [],
+  "author": "BnW-Developers",
+  "license": "ISC",
+  "dependencies": {
+    "async-mutex": "^0.5.0",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.16.4",
+    "dotenv": "^16.4.5",
+    "googleapis": "^144.0.0",
+    "ioredis": "^5.4.1",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "lodash": "^4.17.21",
+    "long": "^5.2.3",
+    "mysql2": "^3.11.3",
+    "protobufjs": "^7.4.0",
+    "snowflake-id": "^1.1.0",
+    "uuid": "^11.0.2",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "repository": "https://github.com/BnW-Developers/Royal-Siege-Server",
+  "devDependencies": {
+    "eslint": "^9.15.0",
+    "nodemon": "^3.1.7",
+    "prettier": "^3.3.3"
+  },
+  "cspell": {
+    "version": "0.2",
+    "ignorePaths": [],
+    "dictionaryDefinitions": [],
+    "dictionaries": [],
+    "words": [],
+    "ignoreWords": [
+      "coolDown"
+    ],
+    "import": []
+  }
+}

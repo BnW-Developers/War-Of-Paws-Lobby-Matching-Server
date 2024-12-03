@@ -3,7 +3,7 @@ import logger from '../../../common/utils/logger/logger.js';
 import { sendConnectionInfo } from '../notification/sendConnectionInfo.js';
 
 class DistributorEventHandler {
-  construct(map) {
+  constructor(map) {
     this.map = map;
   }
 
@@ -21,7 +21,7 @@ class DistributorEventHandler {
       // 버퍼를 문자열로 변환 후 JSON 파싱
       const parsedData = JSON.parse(data.toString());
 
-      logger.info('Parsed Data:', parsedData);
+      logger.info(`Parsed Data: ${JSON.stringify(parsedData, null, 2)}`);
 
       this.map[key] = {
         socket: socket,
@@ -31,7 +31,7 @@ class DistributorEventHandler {
       sendConnectionInfo(null, this.map);
     } catch (error) {
       error.message = 'Distributor onData Error: ' + error.message;
-      handleErr(error);
+      handleErr(null, error);
     }
   }
 

@@ -30,7 +30,7 @@ class TcpServer {
       this.event.onConnection(socket);
 
       socket.on('data', (data) => {
-        this.event.onRead(socket, data);
+        this.event.onData(socket, data);
       });
       socket.on('end', () => {
         this.event.onEnd(socket);
@@ -55,25 +55,25 @@ class TcpServer {
     this.clientDistributor = new TcpClient(
       host,
       port,
-      () => {
+      (options) => {
         // Distributor 접속 이벤트
         this.isConnectedDistributor = true;
         // distributor와 통신은 별로 할 일 없으니 간단하게 stringify로 통신
         this.clientDistributor.write(JSON.stringify(packet));
       },
-      (data) => {
+      (options, data) => {
         // Distributor 데이터 수신 이벤트
         onNoti(data);
       },
-      () => {
+      (options) => {
         // Distributor 접속종료 이벤트
         logger.info('Distributor와 연결 종료');
         this.isConnectedDistributor = false;
       },
-      (err) => {
+      (options, err) => {
         // Distributor 통신 에러 이벤트
-        err.message = 'Distributor 통신 에러: ' + err.message;
-        handleErr(err);
+        err.message = 'Distributor와 통신 에러';
+        handleErr(null, err);
         this.isConnectedDistributor = false;
       },
     );
@@ -83,7 +83,7 @@ class TcpServer {
       if (this.isConnectedDistributor != true) {
         this.clientDistributor.connect();
       }
-    });
+    }, 3000);
   }
 }
 

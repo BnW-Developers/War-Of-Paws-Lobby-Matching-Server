@@ -2,7 +2,8 @@
 // import { createPacket } from '../response/createPacket.js';
 // import { findValueInObject } from '../util/findValueInObject.js';
 // import { ERR_CODES } from './errCodes.js';
-import logger from './../logger.js';
+
+import logger from '../utils/logger/logger.js';
 
 export const handleErr = (socket, err) => {
   // let errorCode;

@@ -36,10 +36,10 @@ class TcpServer {
       socket.on('error', (err) => {
         this.event.onError(socket, err);
       });
+    });
 
-      this.server.listen(this.context.port, () => {
-        console.log(`SERVER ON - ${this.context.host} : ${this.context.port}`);
-      });
+    this.server.listen(this.context.port, () => {
+      console.log(`SERVER ON - ${this.context.host} : ${this.context.port}`);
     });
   }
 

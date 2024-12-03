@@ -28,4 +28,5 @@ class MatchingServer extends TcpServer {
     }
   };
 }
+
 new MatchingServer();

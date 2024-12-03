@@ -110,15 +110,21 @@ class PacketRouter {
   }
 
   /**
-   * 특정 서비스 제거
+   * 특정 서비스 인스턴스 제거
    * @param {Object} packetRoutingMap - 패킷 라우팅 맵
-   * @param {string} serviceName - 제거할 서비스 이름
+   * @param {Object} client - 제거할 서비스의 클라이언트
    */
-  static removeMicroservice(packetRoutingMap, serviceName) {
+  static removeMicroservice(packetRoutingMap, client) {
     for (const packetType in packetRoutingMap) {
+      // 해당 클라이언트를 가진 서비스 인스턴스만 제거
       packetRoutingMap[packetType] = packetRoutingMap[packetType].filter(
-        (service) => service.name !== serviceName,
+        (service) => service.client !== client,
       );
+
+      // 해당 패킷 타입에 대한 서비스가 더 이상 없으면 해당 키 제거
+      if (packetRoutingMap[packetType].length === 0) {
+        delete packetRoutingMap[packetType];
+      }
     }
   }
 }

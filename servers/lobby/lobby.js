@@ -4,6 +4,7 @@ import { handleErr } from '../../common/error/handlerErr.js';
 import logger from '../../common/utils/logger/logger.js';
 import config from './config/lobby.config.js';
 import C2LEventHandler from './events/C2Lobby.event.js';
+import S2LEventHandler from './events/S2Lobby.event.js';
 import PacketRouter from './route/packetRouter.js';
 import ConnectSessionManager from './sessions/connectSessionManager.js';
 
@@ -21,6 +22,12 @@ class LobbyServer extends TcpServer {
     // 패킷 라우팅 맵
     this.packetRoutingMap = packetRoutingMap;
 
+    // S2Lobby 이벤트 핸들러
+    this.s2LobbyEventHandler = new S2LEventHandler(
+      this.packetRoutingMap,
+      this.microserviceClientMap,
+    );
+
     this.connectToDistributor(
       config.distributor.host,
       config.distributor.port,
@@ -30,7 +37,6 @@ class LobbyServer extends TcpServer {
 
   // distributor로 부터 온 microservice와 연결
   handleDistributorData = (jsonData) => {
-    console.log('jsonData: ', jsonData);
     try {
       const data = JSON.parse(jsonData);
       logger.info(`data: ${JSON.stringify(data, null)}`);
@@ -46,10 +52,11 @@ class LobbyServer extends TcpServer {
           const client = new TcpClient(
             node.info.host,
             node.info.port,
-            (options) => logger.info(`${node.info.name} 서비스 연결 성공`),
-            (options, data) => logger.info(`${node.info.name} 서비스 데이터 수신 \ndata: ${data}`),
-            (options) => logger.info(`${node.info.name} 서비스 연결 종료`),
-            (options, err) => console.error(`${node.info.name} 서비스 연결 에러`, err),
+            (options) => this.s2LobbyEventHandler.onConnect(options, node.info.name),
+            (options, data) => this.s2LobbyEventHandler.onData(options, node.info.name, data),
+            (options) => this.s2LobbyEventHandler.onEnd(options, node.info.name, client),
+            (options, err) =>
+              this.s2LobbyEventHandler.onError(options, node.info.name, client, err),
           );
 
           // 마이크로서비스 클라이언트 맵에 추가

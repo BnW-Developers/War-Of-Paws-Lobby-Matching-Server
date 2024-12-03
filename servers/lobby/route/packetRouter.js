@@ -38,7 +38,6 @@ class PacketRouter {
    * @returns {boolean} 라우팅 성공 여부
    */
   static routePacket(packetRoutingMap, socket, packet) {
-    console.log('packet: ', packet);
     if (!packet || !packet.packetType) {
       logger.error('Invalid packet structure');
       return false;

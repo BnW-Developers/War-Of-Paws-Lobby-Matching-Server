@@ -1,4 +1,7 @@
 import { COMMON_CONFIG as config } from '../../config/config.js';
+import { PACKET_TYPE_REVERSED } from '../../constants/header.js';
+import { GamePacket } from '../../protobuf/loadProto.js';
+import { snakeToCamel } from './../formatters/snakeToCamel.js';
 
 export const parseC2LobbyPacket = (socket) => {
   // 클라이언트로 부터 받은 패킷 파싱
@@ -83,4 +86,9 @@ export const parseServerPacket = (socket) => {
     clientKey,
     payload,
   };
+};
+
+export const getDecodedPayload = (packetType, payload) => {
+  const payloadName = snakeToCamel(PACKET_TYPE_REVERSED[packetType]);
+  return { ...GamePacket.decode(payload)[payloadName] };
 };

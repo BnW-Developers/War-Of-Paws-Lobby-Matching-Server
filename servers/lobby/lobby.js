@@ -4,6 +4,7 @@ import { handleErr } from '../../common/error/handlerErr.js';
 import logger from '../../common/utils/logger/logger.js';
 import config from './config/lobby.config.js';
 import C2LEventHandler from './events/C2Lobby.event.js';
+import PacketRouter from './route/packetRouter.js';
 import ConnectSessionManager from './sessions/connectSessionManager.js';
 
 class LobbyServer extends TcpServer {
@@ -57,6 +58,7 @@ class LobbyServer extends TcpServer {
             info: node.info,
           };
 
+          PacketRouter.registerMicroservice(this.packetRoutingMap, node, client);
           client.connect();
         }
       }

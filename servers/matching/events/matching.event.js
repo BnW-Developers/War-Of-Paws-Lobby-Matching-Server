@@ -2,11 +2,15 @@ import { handleErr } from '../../../common/error/handlerErr.js';
 import { getDecodedPayload, parseServerPacket } from '../../../common/utils/packet/parsePacket.js';
 import config from '../config/matching.config.js';
 import { getHandlerByPacketType } from '../handlers/index.js';
+import matchingSystem from '../matchingQueue/matchingSystem.js';
 
 class MatchingEventHandler {
   onConnection(socket) {
-    console.log(`Lobby 서버와 연결: ${socket.remoteAddress}:${socket.remotePort}`);
+    const key = `${socket.remoteAddress}:${socket.remotePort}`;
+    console.log(`Lobby 서버와 연결: ${key}`);
     socket.buffer = Buffer.alloc(0);
+
+    matchingSystem.registerSocket(socket);
   }
 
   async onData(socket, data) {

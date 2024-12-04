@@ -32,8 +32,8 @@ const matchRequest = async (socket, clientKey, payload) => {
       throw new Error(`user ${clientKey} add queue result: failed`);
     }
 
-    const packet = createServerPacket(9, clientKey, { opponentId: 'tryMatch' });
-    socket.write(packet);
+    // const packet = createServerPacket(9, clientKey, { opponentId: 'tryMatch' });
+    // socket.write(packet);
   } catch (err) {
     handleErr(socket, err);
   }

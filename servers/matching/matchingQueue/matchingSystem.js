@@ -1,102 +1,125 @@
+import { PACKET_TYPE } from '../../../common/constants/header.js';
 import { handleErr } from '../../../common/error/handlerErr.js';
 import redisClient from '../../../common/redis/redisClient.js';
 import logger from '../../../common/utils/logger/logger.js';
+import { createServerPacket } from '../../../common/utils/packet/createPacket.js';
 
 class MatchingSystem {
+  #config = {
+    SPECIES: {
+      CAT: 'CAT_QUEUE',
+      DOG: 'DOG_QUEUE',
+    },
+    LOCK_KEY: 'matching:lock',
+    LOCK_TTL: 3000, // 3초
+    MAX_WAIT_TIME: 5 * 60 * 1000, // 5분
+    MATCH_INTERVAL: 500, // 500ms마다 매치 시도
+    MATCH_QUEUE_LIMIT: 10, // 큐에서 처리할 최대 항목 수
+  };
+
   constructor() {
+    // 싱글턴
     if (MatchingSystem.instance) {
       return MatchingSystem.instance;
     }
 
     this.redis = redisClient;
+    this.responseSocket = null;
 
-    // 매칭 관련 상수
-    this.CAT_QUEUE_KEY = 'matching:queue:cat';
-    this.DOG_QUEUE_KEY = 'matching:queue:dog';
-    this.LOCK_KEY = 'matching:lock';
-    this.LOCK_TTL = 3 * 1000; // 3초
-    this.MAX_WAIT_TIME = 5 * 60 * 1000; // 5분
-    this.MATCH_INTERVAL = 500; // 500ms마다 매치 시도
-
-    this.matchingLoop();
+    // 매칭 루프 초기화
+    this.#initializeMatchingLoop();
 
     MatchingSystem.instance = this;
   }
 
-  // Redis 분산 락 시도
-  async acquireLock() {
+  // 매칭 루프 초기화
+  #initializeMatchingLoop() {
+    // 주기적으로 매칭 시도
+    this.matchingIntervalId = setInterval(
+      () => this.#processMatches(),
+      this.#config.MATCH_INTERVAL,
+    );
+  }
+
+  // 로비서버 소켓 등록
+  registerSocket(socket) {
+    this.responseSocket = socket;
+  }
+
+  // 분산 락 획득 시도
+  async #acquireLock() {
     const lockValue = Date.now().toString();
-    const result = await this.redis.set(this.LOCK_KEY, lockValue, 'PX', this.LOCK_TTL, 'NX');
-    if (result === 'OK') {
-      return lockValue;
-    }
-    return null;
+    const result = await this.redis.set(
+      this.#config.LOCK_KEY,
+      lockValue,
+      'PX',
+      this.#config.LOCK_TTL,
+      'NX',
+    );
+    return result === 'OK' ? lockValue : null;
   }
 
   // 분산 락 해제
-  async releaseLock(lockValue) {
+  async #releaseLock(lockValue) {
     const script = `
-    if redis.call("get", KEYS[1]) == ARGV[1] then
-      return redis.call("del", KEYS[1])
-    else
-      return 0
-    end
+      if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+      else
+        return 0
+      end
     `;
 
-    await this.redis.eval(script, 1, this.LOCK_KEY, lockValue);
+    await this.redis.eval(script, 1, this.#config.LOCK_KEY, lockValue);
   }
 
-  // 시간마다 매칭 시도
-  async matchingLoop() {
-    const processMatches = async () => {
-      let lockValue = null;
-      try {
-        // 락 획득 시도
-        lockValue = await this.acquireLock();
-        if (!lockValue) {
-          // 다른 서버가 현재 매칭 처리 중
-          return;
-        }
-        // CAT 팀과 DOG 팀의 각각의 대기열에서 유저 검색
-        const allUsers = await this.getAllQueues();
-
-        // 타임아웃 체크 및 처리
-        await this.checkTimeouts(allUsers);
-
-        // 매칭 시도
-        await this.tryMatch(allUsers);
-      } catch (err) {
-        err.message = 'matchingLoop Error: ' + err.message;
-        handleErr(null, err);
-      } finally {
-        if (lockValue) {
-          await this.releaseLock(lockValue);
-        }
-      }
-    };
-    this.matchingIntervalId = setInterval(processMatches, this.MATCH_INTERVAL);
-  }
-
-  // 모든 종족의 대기얼 졍보 불러오기
-  async getAllQueues() {
+  // 매칭 프로세스
+  async #processMatches() {
+    let lockValue = null;
     try {
-      const queues = {};
-      const catQueue = await this.redis.zrange(this.CAT_QUEUE_KEY, 0, 9, 'WITHSCORES');
-      const catUsers = this.parseQueueData(catQueue);
-      queues['CAT'] = catUsers;
+      // 락 획득 시도
+      lockValue = await this.#acquireLock();
+      if (!lockValue) {
+        // 다른 서버가 현재 매칭 처리 중
+        return;
+      }
 
-      const dogQueue = await this.redis.zrange(this.DOG_QUEUE_KEY, 0, 9, 'WITHSCORES');
-      const dogUsers = this.parseQueueData(dogQueue);
-      queues['DOG'] = dogUsers;
+      // CAT 팀과 DOG 팀의 각각의 대기열에서 유저 검색
+      const allQueues = await this.#getAllQueues();
 
-      return queues;
-    } catch (err) {
-      err.message = 'getAllQueues Error: ' + err.message;
-      handleErr(null, err);
+      // 타임아웃 체크 및 처리
+      const filteredQueues = await this.#checkTimeouts(allQueues);
+
+      // 매칭 시도
+      await this.#tryMatch(filteredQueues);
+    } catch (error) {
+      logger.error(`Match Processing Error ${error.message}`);
+      handleErr(null, error);
+    } finally {
+      if (lockValue) await this.#releaseLock(lockValue);
     }
   }
 
-  parseQueueData(queue) {
+  // 모든 종족의 대기얼 졍보 불러오기
+  async #getAllQueues() {
+    try {
+      const queues = {};
+      for (const [species, queueKey] of Object.entries(this.#config.SPECIES)) {
+        const queue = await this.redis.zrange(
+          queueKey,
+          0,
+          this.#config.MATCH_QUEUE_LIMIT - 1,
+          'WITHSCORES',
+        );
+        queues[species] = this.#parseQueueData(queue);
+      }
+      return queues;
+    } catch (error) {
+      logger.error(`Queue Retrieval Error ${error.message}`);
+      throw error;
+    }
+  }
+
+  #parseQueueData(queue) {
     const parsed = [];
     for (let i = 0; i < queue.length; i += 2) {
       parsed.push({
@@ -107,159 +130,173 @@ class MatchingSystem {
     return parsed;
   }
 
-  async checkTimeouts(queues) {
-    const filteredQueue = {};
+  // 타임아웃 체크
+  async #checkTimeouts(queues) {
     const now = Date.now();
+    const filteredQueues = {};
 
     for (const [species, users] of Object.entries(queues)) {
-      filteredQueue[species] = [];
+      filteredQueues[species] = [];
+
       for (const user of users) {
-        if (now - user.timestamp < this.MAX_WAIT_TIME) {
+        if (now - user.timestamp < this.#config.MAX_WAIT_TIME) {
           // 타임아웃 되지 않은 유저는 새로운 큐에 삽입
-          filteredQueue[species].push(user);
-          continue;
+          filteredQueues[species].push(user);
+        } else {
+          await this.#handleMatchTimeout(user.userId, species);
         }
-        // 타임아웃 처리
-        await this.handleMatchTimeout(user.userId, species);
       }
     }
 
-    return filteredQueue;
+    return filteredQueues;
   }
 
-  // 매칭 시간 처리 핸들러
-  async handleMatchTimeout(userId, species) {
+  // 타임아웃 된 유저는 삭제
+  async #handleMatchTimeout(userId, species) {
     try {
-      logger.info(`match timeout id: ${userId}`);
+      logger.info(`Match timeout for user { userId, species }`);
       await this.removeUser(userId, species);
-
-      // TODO: 매치 실패 notification?
-    } catch (err) {
-      err.message = 'handleMatchTimeout Error: ' + err.message;
-      handleErr(null, err);
+    } catch (error) {
+      logger.error(`Match Timeout Handling Error ${(userId, species, error.message)}`);
     }
   }
 
-  async tryMatch(allUsers) {
-    const catUsers = allUsers['CAT'];
-    const dogUsers = allUsers['DOG'];
-
+  async #tryMatch(allUsers) {
+    const catUsers = allUsers['CAT'] || [];
+    const dogUsers = allUsers['DOG'] || [];
     const minLength = Math.min(catUsers.length, dogUsers.length);
 
     if (minLength === 0) return;
 
     // 트랜잭션 시작
     const multi = this.redis.multi();
+    const matchedPairs = [];
 
     for (let i = 0; i < minLength; i++) {
       const catUser = catUsers[i];
       const dogUser = dogUsers[i];
 
-      // 매칭 큐에서 유저 제거 명령 트랜잭션에 추가
-      multi.zrem(this.CAT_QUEUE_KEY, catUser.userId);
-      multi.zrem(this.DOG_QUEUE_KEY, dogUser.userId);
+      multi.zrem(this.#config.SPECIES.CAT, catUser.userId);
+      multi.zrem(this.#config.SPECIES.DOG, dogUser.userId);
+
+      matchedPairs.push({ catUser, dogUser });
     }
 
     // 트랜잭션 실행
     const results = await multi.exec();
 
-    // 트랜잭션 성공한 매치에 대해서만 처리
-    for (let i = 0; i < minLength; i++) {
+    for (let i = 0; i < matchedPairs.length; i++) {
       const catRemoved = results[i * 2][1];
       const dogRemoved = results[i * 2 + 1][1];
 
       if (catRemoved && dogRemoved) {
-        const catUser = catUsers[i];
-        const dogUser = dogUsers[i];
-        this.handleMatchComplete(catUser.userId, dogUser.userId);
+        const { catUser, dogUser } = matchedPairs[i];
+        await this.#handleMatchComplete(catUser.userId, dogUser.userId);
       }
     }
   }
 
-  async handleMatchComplete(user1Id, user2Id) {
+  async #handleMatchComplete(user1Id, user2Id) {
     try {
-      // 유저 id로 유저 인스턴스 불러오기
-      const user1SessionKey = `user:session:${user1Id}`;
-      const user2SessionKey = `user:session:${user2Id}`;
+      const sessionKeys = [`user:session:${user1Id}`, `user:session:${user2Id}`];
 
-      const [user1Session, user2Session] = await Promise.all([
-        this.redis.hgetall(user1SessionKey),
-        this.redis.hgetall(user2SessionKey),
-      ]);
+      const [user1Session, user2Session] = await Promise.all(
+        sessionKeys.map((key) => this.redis.hgetall(key)),
+      );
 
       if (!user1Session || !user2Session) {
         throw new Error('매칭된 유저를 찾을 수 없습니다.');
       }
 
       // TODO 매칭 완료 후 게임 서버로 게임 생성 요청
+      const gameServerPort = 5051;
 
       logger.info(`Match complete user1: ${user1Id} vs user2: ${user2Id}`);
 
-      // 유저에게 매칭 결과 전송
-      this.matchNotification(user1Id, user2Id);
-
-      // 유저 세션 업데이트
       const multi = this.redis.multi();
-      multi.hmset(user1SessionKey, { isMatchmaking: false, currentSpecies: '' });
-      multi.hmset(user2SessionKey, { isMatchmaking: false, currentSpecies: '' });
+      sessionKeys.forEach((key) => {
+        multi.hmset(key, {
+          isMatchmaking: false,
+          currentSpecies: '',
+        });
+      });
       await multi.exec();
-    } catch (err) {
-      err.message = 'handleMatchComplete Error: ' + err.message;
-      handleErr(null, err);
+
+      this.#matchNotification(gameServerPort, user1Id, user2Id);
+    } catch (error) {
+      logger.error(`Match Completion Error' ${(user1Id, user2Id, error.message)}`);
     }
   }
 
-  matchNotification(user1Id, user2Id) {
-    console.log('TODO: 각 유저에게 상대 정보 보내주기');
-    // TODO: API 요청으로 서버 포트 받아오기
-    // 받아왔으면 각 유저에게 보내주기
+  #matchNotification(gameServerPort, user1Id, user2Id) {
+    try {
+      const createNotificationPacket = (userId, opponentId) =>
+        createServerPacket(PACKET_TYPE.MATCH_NOTIFICATION, userId, {
+          opponentId: `Port: ${gameServerPort}, Enemy: ${opponentId}`,
+        });
+
+      const packet1 = createNotificationPacket(user1Id, user2Id);
+      const packet2 = createNotificationPacket(user2Id, user1Id);
+
+      this.responseSocket.write(packet1);
+      this.responseSocket.write(packet2);
+
+      logger.info('Match notifications sent', { user1Id, user2Id });
+    } catch (error) {
+      logger.error('Match Notification Error', {
+        user1Id,
+        user2Id,
+        error: error.message,
+      });
+    }
   }
 
   // 종족에 맞는 매칭 큐에 유저 등록
   async addQueue(userId, species) {
     try {
       const sessionKey = `user:session:${userId}`;
+      const upperSpecies = species.toUpperCase();
 
       // 유저 매치매이킹 상태 업데이트 (true)
       await this.redis.hmset(sessionKey, {
         isMatchmaking: true,
-        currentSpecies: species.toUpperCase(),
+        currentSpecies: upperSpecies,
       });
 
-      // 종족에 따른 queueKey 결정
-      const timestamp = Date.now();
-      const queueKey = species.toUpperCase() === 'CAT' ? this.CAT_QUEUE_KEY : this.DOG_QUEUE_KEY;
+      const queueKey = this.#config.SPECIES[upperSpecies];
       // sorted set에 유저 저장. score: timestamp, value: userId
-      await this.redis.zadd(queueKey, timestamp, userId);
+      await this.redis.zadd(queueKey, Date.now(), userId);
 
+      logger.info(`User added to queue ${(userId, upperSpecies)}`);
       return { success: true, message: 'Added to queue' };
-    } catch (err) {
-      err.message = 'addQueue Error: ' + err.message;
-      handleErr(null, err);
+    } catch (error) {
+      logger.error('Add Queue Error', {
+        userId,
+        species,
+        error: error.message,
+      });
+      handleErr(null, error);
     }
   }
 
   // 매칭 큐에서 유저 삭제
   async removeUser(userId, species) {
     try {
-      logger.info(`Remove user in matching queue id: ${userId}, species: ${species}`);
-
       const sessionKey = `user:session:${userId}`;
 
-      // 유저 매치매이킹 상태 업데이트 (false)
       await this.redis.hmset(sessionKey, {
         isMatchmaking: false,
         currentSpecies: '',
       });
 
-      const queueKey = species === 'CAT' ? this.CAT_QUEUE_KEY : this.DOG_QUEUE_KEY;
+      const queueKey = this.#config.SPECIES[species];
       await this.redis.zrem(queueKey, userId);
-    } catch (err) {
-      err.message = 'removeUser Error: ' + err.message;
-      handleErr(null, err);
+
+      logger.info(`User removed from queue ${(userId, species)}`);
+    } catch (error) {
+      logger.error(`Remove User Error ${(userId, species, error.message)}`);
     }
   }
 }
 
-const matchingSystem = new MatchingSystem();
-export default matchingSystem;
+export default new MatchingSystem();

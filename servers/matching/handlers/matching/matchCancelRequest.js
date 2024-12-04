@@ -21,8 +21,8 @@ const matchCancelRequest = async (socket, clientKey, payload) => {
       await matchingSystem.removeUser(clientKey, userSession.currentSpecies);
       logger.info(`match Cancel request for socket: ${clientKey}`);
 
-      const packet = createServerPacket(9, clientKey, { opponentId: 'match cancel' });
-      socket.write(packet);
+      // const packet = createServerPacket(9, clientKey, { opponentId: 'match cancel' });
+      // socket.write(packet);
     } else {
       console.warn(`client ${clientKey}: 매칭 중이 아닙니다.`);
     }

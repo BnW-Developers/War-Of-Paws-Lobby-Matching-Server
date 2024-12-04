@@ -1,6 +1,7 @@
 import { handleErr } from '../../../common/error/handlerErr.js';
 import { getDecodedPayload, parseServerPacket } from '../../../common/utils/packet/parsePacket.js';
 import config from '../config/matching.config.js';
+import { getHandlerByPacketType } from '../handlers/index.js';
 
 class MatchingEventHandler {
   onConnection(socket) {
@@ -8,7 +9,7 @@ class MatchingEventHandler {
     socket.buffer = Buffer.alloc(0);
   }
 
-  onData(socket, data) {
+  async onData(socket, data) {
     try {
       socket.buffer = Buffer.concat([socket.buffer, data]);
 
@@ -19,9 +20,10 @@ class MatchingEventHandler {
         const { packetType, clientKey, payload } = parseServerPacket(socket);
 
         const decodedPayload = getDecodedPayload(packetType, payload);
-        console.log('decodedPayload: ', decodedPayload);
 
         // 여기서 이제 packetType보고 handler 실행시키도록 해야됨
+        const handler = getHandlerByPacketType(packetType);
+        await handler(socket, clientKey, decodedPayload);
       }
     } catch (err) {
       err.message = '매칭서버 onData 에러: ' + err.message;

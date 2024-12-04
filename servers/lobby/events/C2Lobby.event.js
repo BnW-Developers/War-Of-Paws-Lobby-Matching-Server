@@ -4,6 +4,7 @@ import PacketRouter from '../route/packetRouter.js';
 import { parseC2LobbyPacket } from '../../../common/utils/packet/parsePacket.js';
 import jwt from 'jsonwebtoken';
 import { SECRET_KEY } from '../constants/env.js';
+import redisClient from './../../../common/redis/redisClient.js';
 
 /**
  * 클라이언트(유저)가 게이트로 연결을 맺고 요청을 보낼 때를 정의
@@ -16,26 +17,47 @@ class C2LEventHandler {
     this.connectSessionManager = connectSessionManager;
   }
 
-  onConnection(socket) {
-    const key = `${socket.remoteAddress}:${socket.remotePort}`;
-    logger.info(`클라이언트 연결: ${key}`);
+  async onConnection(socket) {
+    try {
+      const key = `${socket.remoteAddress}:${socket.remotePort}`;
+      logger.info(`클라이언트 연결: ${key}`);
 
-    // 초기 소켓 설정
-    socket.buffer = Buffer.alloc(0);
-    socket.isAuthenticated = true; // 인증 상태 플래그 추가
+      // 초기 소켓 설정
+      socket.buffer = Buffer.alloc(0);
+      socket.isAuthenticated = false; // 인증 상태 플래그 추가
 
-    this.connectSessionManager.addConnect(socket);
+      // 일정 시간 내에 인증 완료되지 않으면 연결 종료
+      socket.authTimeout = setTimeout(() => {
+        if (!socket.isAuthenticated) {
+          logger.warn(`인증 시간 초과: ${key}`);
+          socket.end();
+        }
+      }, 10 * 1000); // 10초 타임아웃
 
-    // // 일정 시간 내에 인증 완료되지 않으면 연결 종료
-    // socket.authTimeout = setTimeout(() => {
-    //   if (!socket.isAuthenticated) {
-    //     logger.warn(`인증 시간 초과: ${key}`);
-    //     socket.end();
-    //   }
-    // }, 10 * 1000); // 10초 타임아웃
+      // 임시
+      this.connectSessionManager.addConnect(socket);
+      socket.isAuthenticated = true;
+      // 원래 Auth 서버에서 해야하는데 임시로 여기서 함
+      // id는 key로 대충 쓰자
+      const sessionKey = `user:session:${key}`;
+      const userInfo = {
+        socketId: key,
+        isLoggedIn: true,
+        isMatchmaking: false,
+        currentGameId: '',
+        currentSpecies: '',
+      };
+
+      await redisClient.hmset(sessionKey, userInfo);
+      await redisClient.expire(sessionKey, 3600);
+      clearTimeout(socket.authTimeout);
+    } catch (err) {
+      console.error('Gate onConnection 오류', err);
+      socket.end();
+    }
   }
 
-  onData(socket, data) {
+  async onData(socket, data) {
     try {
       console.log(`Lobby data from ${socket.remoteAddress}:${socket.remotePort}`);
       socket.buffer = Buffer.concat([socket.buffer, data]);
@@ -97,19 +119,27 @@ class C2LEventHandler {
   }
 
   onEnd(socket) {
-    if (socket.authTimeout) {
-      clearTimeout(socket.authTimeout);
+    try {
+      if (socket.authTimeout) {
+        clearTimeout(socket.authTimeout);
+      }
+      this.connectSessionManager.removeConnect(socket);
+      console.log(`클라이언트 연결 종료: ${socket.remoteAddress}:${socket.remotePort}`);
+    } catch (err) {
+      console.error('Gate onEnd error: ', err);
     }
-    this.connectSessionManager.removeConnect(socket);
-    console.log(`클라이언트 연결 종료: ${socket.remoteAddress}:${socket.remotePort}`);
   }
 
   onError(socket, err) {
-    if (socket.authTimeout) {
-      clearTimeout(socket.authTimeout);
+    try {
+      if (socket.authTimeout) {
+        clearTimeout(socket.authTimeout);
+      }
+      this.connectSessionManager.removeConnect(socket);
+      console.error(`클라이언트 오류 발생: ${socket.remoteAddress}:${socket.remotePort}`, err);
+    } catch (err) {
+      console.error('Gate onError error: ', err);
     }
-    this.connectSessionManager.removeConnect(socket);
-    console.error(`클라이언트 오류 발생: ${socket.remoteAddress}:${socket.remotePort}`, err);
   }
 }
 

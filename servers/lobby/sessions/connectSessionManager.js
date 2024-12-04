@@ -10,6 +10,7 @@ class ConnectSessionManager {
 
   findSocketByRemoteKey(key) {
     const session = this.connectSession.get(key);
+    if (!session) return null;
     return session.socket;
   }
 

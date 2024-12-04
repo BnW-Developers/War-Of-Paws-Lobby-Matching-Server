@@ -26,6 +26,7 @@ class LobbyServer extends TcpServer {
     this.s2LobbyEventHandler = new S2LEventHandler(
       this.packetRoutingMap,
       this.microserviceClientMap,
+      connectSessionManager,
     );
 
     this.connectToDistributor(
@@ -52,8 +53,8 @@ class LobbyServer extends TcpServer {
           const client = new TcpClient(
             node.info.host,
             node.info.port,
-            (options) => this.s2LobbyEventHandler.onConnect(options, node.info.name),
-            (options, data) => this.s2LobbyEventHandler.onData(options, node.info.name, data),
+            (options) => this.s2LobbyEventHandler.onConnect(client, node.info.name),
+            (options, data) => this.s2LobbyEventHandler.onData(client, node.info.name, data),
             (options) => this.s2LobbyEventHandler.onEnd(options, node.info.name, client),
             (options, err) =>
               this.s2LobbyEventHandler.onError(options, node.info.name, client, err),

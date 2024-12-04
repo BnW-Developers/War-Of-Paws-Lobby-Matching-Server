@@ -1,5 +1,6 @@
 import { handleErr } from '../../../../common/error/handlerErr.js';
 import logger from '../../../../common/utils/logger/logger.js';
+import { createServerPacket } from '../../../../common/utils/packet/createPacket.js';
 
 const matchRequest = async (socket, clientKey, payload) => {
   try {
@@ -24,6 +25,9 @@ const matchRequest = async (socket, clientKey, payload) => {
     // } else {
     //   throw new Error(`user ${user.getUserId()} add queue result: failed`);
     // }
+
+    const packet = createServerPacket(9, clientKey, { opponentId: 'yourId' });
+    socket.write(packet);
   } catch (err) {
     handleErr(socket, err);
   }

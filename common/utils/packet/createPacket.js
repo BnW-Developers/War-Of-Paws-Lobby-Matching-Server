@@ -1,6 +1,13 @@
 import { COMMON_CONFIG as config } from '../../config/config.js';
+import { PACKET_TYPE_REVERSED } from '../../constants/header.js';
+import { GamePacket } from '../../protobuf/loadProto.js';
+import { snakeToCamel } from '../formatters/snakeToCamel.js';
 
 export const createL2CPacket = (Type, seq, payload) => {
+  if (!Buffer.isBuffer(payload)) {
+    payload = encodePayloadToBuffer(Type, payload);
+  }
+
   const packetType = Buffer.alloc(config.packet.client.typeLength);
   packetType.writeUInt16BE(Type, 0);
 
@@ -27,6 +34,10 @@ export const createL2CPacket = (Type, seq, payload) => {
  * @param {Buffer} payloadBuffer - 서버로 전달할 페이로드 버퍼
  */
 export const createServerPacket = (packetType, clientKey, payloadBuffer) => {
+  if (!Buffer.isBuffer(payloadBuffer)) {
+    payloadBuffer = encodePayloadToBuffer(packetType, payloadBuffer);
+  }
+
   const packetTypeBuffer = Buffer.alloc(config.packet.server.typeLength);
   packetTypeBuffer.writeUInt16BE(packetType, 0);
 
@@ -45,4 +56,14 @@ export const createServerPacket = (packetType, clientKey, payloadBuffer) => {
     payloadLengthBuffer,
     payloadBuffer,
   ]);
+};
+
+export const encodePayloadToBuffer = (packetType, payload) => {
+  const typeName = PACKET_TYPE_REVERSED[packetType];
+  const camel = snakeToCamel(typeName);
+  const response = {
+    [camel]: payload,
+  };
+
+  return GamePacket.encode(response).finish();
 };

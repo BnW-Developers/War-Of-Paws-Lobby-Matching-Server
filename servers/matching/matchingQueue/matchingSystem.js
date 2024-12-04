@@ -18,7 +18,7 @@ class MatchingSystem {
     this.MAX_WAIT_TIME = 5 * 60 * 1000; // 5분
     this.MATCH_INTERVAL = 500; // 500ms마다 매치 시도
 
-    // this.matchingLoop();
+    this.matchingLoop();
 
     MatchingSystem.instance = this;
   }
@@ -133,10 +133,7 @@ class MatchingSystem {
       logger.info(`match timeout id: ${userId}`);
       await this.removeUser(userId, species);
 
-      const user = userSessionManager.getUserByUserId(userId);
-      if (user) {
-        // TODO: 매치 실패 notification?
-      }
+      // TODO: 매치 실패 notification?
     } catch (err) {
       err.message = 'handleMatchTimeout Error: ' + err.message;
       handleErr(null, err);
@@ -165,7 +162,6 @@ class MatchingSystem {
 
     // 트랜잭션 실행
     const results = await multi.exec();
-    console.log('results: ', results);
 
     // 트랜잭션 성공한 매치에 대해서만 처리
     for (let i = 0; i < minLength; i++) {
@@ -180,39 +176,62 @@ class MatchingSystem {
     }
   }
 
-  handleMatchComplete(user1Id, user2Id) {
-    // 유저 id로 유저 인스턴스 불러오기
-    const user1 = userSessionManager.getUserByUserId(user1Id);
-    const user2 = userSessionManager.getUserByUserId(user2Id);
+  async handleMatchComplete(user1Id, user2Id) {
+    try {
+      // 유저 id로 유저 인스턴스 불러오기
+      const user1SessionKey = `user:session:${user1Id}`;
+      const user2SessionKey = `user:session:${user2Id}`;
 
-    if (!user1 || !user2) {
-      throw new Error('매칭된 유저를 찾을 수 없습니다.');
+      const [user1Session, user2Session] = await Promise.all([
+        this.redis.hgetall(user1SessionKey),
+        this.redis.hgetall(user2SessionKey),
+      ]);
+
+      if (!user1Session || !user2Session) {
+        throw new Error('매칭된 유저를 찾을 수 없습니다.');
+      }
+
+      // TODO 매칭 완료 후 게임 서버로 게임 생성 요청
+
+      logger.info(`Match complete user1: ${user1Id} vs user2: ${user2Id}`);
+
+      // 유저에게 매칭 결과 전송
+      this.matchNotification(user1Id, user2Id);
+
+      // 유저 세션 업데이트
+      const multi = this.redis.multi();
+      multi.hmset(user1SessionKey, { isMatchmaking: false, currentSpecies: '' });
+      multi.hmset(user2SessionKey, { isMatchmaking: false, currentSpecies: '' });
+      await multi.exec();
+    } catch (err) {
+      err.message = 'handleMatchComplete Error: ' + err.message;
+      handleErr(null, err);
     }
-
-    // TODO 매칭 완료 후 게임 서버로 게임 생성 요청
-
-    logger.info(`Match complete user1: ${user1Id} vs user2: ${user2Id}`);
-    // 유저에게 매칭 결과 전송
-    this.matchNotification(user1, user2);
   }
 
-  matchNotification(user1, user2) {
+  matchNotification(user1Id, user2Id) {
+    console.log('TODO: 각 유저에게 상대 정보 보내주기');
     // TODO: API 요청으로 서버 포트 받아오기
+    // 받아왔으면 각 유저에게 보내주기
   }
 
   // 종족에 맞는 매칭 큐에 유저 등록
-  async addQueue(user, species) {
+  async addQueue(userId, species) {
     try {
-      // 유저 매치매이킹 상태 업데이트 (true)
-      user.setIsMatchmaking(true);
-      user.setCurrentSpecies(species.toUpperCase());
+      const sessionKey = `user:session:${userId}`;
 
-      const userId = user.getUserId();
+      // 유저 매치매이킹 상태 업데이트 (true)
+      await this.redis.hmset(sessionKey, {
+        isMatchmaking: true,
+        currentSpecies: species.toUpperCase(),
+      });
+
       // 종족에 따른 queueKey 결정
-      const queueKey = species.toUpperCase() === 'CAT' ? this.CAT_QUEUE_KEY : this.DOG_QUEUE_KEY;
       const timestamp = Date.now();
+      const queueKey = species.toUpperCase() === 'CAT' ? this.CAT_QUEUE_KEY : this.DOG_QUEUE_KEY;
       // sorted set에 유저 저장. score: timestamp, value: userId
       await this.redis.zadd(queueKey, timestamp, userId);
+
       return { success: true, message: 'Added to queue' };
     } catch (err) {
       err.message = 'addQueue Error: ' + err.message;
@@ -224,9 +243,14 @@ class MatchingSystem {
   async removeUser(userId, species) {
     try {
       logger.info(`Remove user in matching queue id: ${userId}, species: ${species}`);
+
+      const sessionKey = `user:session:${userId}`;
+
       // 유저 매치매이킹 상태 업데이트 (false)
-      const user = userSessionManager.getUserByUserId(userId);
-      user.setIsMatchmaking(false);
+      await this.redis.hmset(sessionKey, {
+        isMatchmaking: false,
+        currentSpecies: '',
+      });
 
       const queueKey = species === 'CAT' ? this.CAT_QUEUE_KEY : this.DOG_QUEUE_KEY;
       await this.redis.zrem(queueKey, userId);

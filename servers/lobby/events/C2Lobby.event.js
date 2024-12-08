@@ -123,7 +123,19 @@ class C2LEventHandler {
       if (socket.authTimeout) {
         clearTimeout(socket.authTimeout);
       }
+      const key = `${socket.remoteAddress}:${socket.remotePort}`;
+      const timestamp = Date.now();
       this.connectSessionManager.removeConnect(socket);
+
+      // 유저 접속 종료 Pub
+      redisClient.publish(
+        'user:disconnect',
+        JSON.stringify({
+          userId: key,
+          timestamp,
+        }),
+      );
+
       console.log(`클라이언트 연결 종료: ${socket.remoteAddress}:${socket.remotePort}`);
     } catch (err) {
       console.error('Gate onEnd error: ', err);
@@ -135,7 +147,19 @@ class C2LEventHandler {
       if (socket.authTimeout) {
         clearTimeout(socket.authTimeout);
       }
+      const key = `${socket.remoteAddress}:${socket.remotePort}`;
+      const timestamp = Date.now();
       this.connectSessionManager.removeConnect(socket);
+
+      // 유저 접속 종료 Pub
+      redisClient.publish(
+        'user:disconnect',
+        JSON.stringify({
+          userId: key,
+          timestamp,
+        }),
+      );
+
       console.error(`클라이언트 오류 발생: ${socket.remoteAddress}:${socket.remotePort}`, err);
     } catch (err) {
       console.error('Gate onError error: ', err);

@@ -2,6 +2,7 @@ import TcpServer from '../../common/classes/models/tcpServer.js';
 import { handleErr } from '../../common/error/handlerErr.js';
 import logger from '../../common/utils/logger/logger.js';
 import config from './config/matching.config.js';
+import MatchingDisconnectHandler from './events/disconnect.handler.js';
 import MatchingEventHandler from './events/matching.event.js';
 
 class MatchingServer extends TcpServer {
@@ -9,7 +10,7 @@ class MatchingServer extends TcpServer {
     const eventHandler = new MatchingEventHandler();
 
     super('matching', config.matching.host, config.matching.port, eventHandler);
-
+    this.userDisconnectEvent = new MatchingDisconnectHandler();
     this.connectToDistributor(
       config.distributor.host,
       config.distributor.port,

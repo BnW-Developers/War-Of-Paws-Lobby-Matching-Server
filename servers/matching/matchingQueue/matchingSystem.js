@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { PACKET_TYPE } from '../../../common/constants/header.js';
 import { handleErr } from '../../../common/error/handlerErr.js';
 import redisClient from '../../../common/redis/redisClient.js';
@@ -208,8 +209,11 @@ class MatchingSystem {
         throw new Error('매칭된 유저를 찾을 수 없습니다.');
       }
 
-      // TODO 매칭 완료 후 게임 서버로 게임 생성 요청
-      const gameServerPort = 5051;
+      // 매칭 완료 후 헬스체크 서버로 port 요청
+      const gameServerPort = await this.#requestHealthcheckServer(user1Id, user2Id);
+
+      // 테스트용 임시 포트
+      // const gameServerPort = 5051;
 
       logger.info(`Match complete user1: ${user1Id} vs user2: ${user2Id}`);
 
@@ -248,6 +252,25 @@ class MatchingSystem {
         user2Id,
         error: error.message,
       });
+    }
+  }
+
+  async #requestHealthcheckServer(user1Id, user2Id) {
+    try {
+      const response = await axios.get('http://localhost:3000/check/availableSvr', {
+        params: {
+          user1: user1Id,
+          user2: user2Id,
+        },
+      });
+
+      const gameServerPort = response.data.port;
+
+      logger.info(`Game Server port recived: ${gameServerPort}`);
+
+      return gameServerPort;
+    } catch (err) {
+      logger.error(`Game Server Request Error: ${err}`);
     }
   }
 

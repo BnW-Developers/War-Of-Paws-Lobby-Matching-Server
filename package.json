@@ -5,20 +5,16 @@
   "main": "./src/server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon ./src/server.js",
-    "dummy1": "nodemon ./src/test/dummy.js",
-    "dummy2": "nodemon ./src/test/dummy2.js",
-    "migrate": "node src/mysql/migration/createSchemas.js",
-    "ls1": "node ./src/test/locationSync/client1.js",
-    "ls2": "node ./src/test/locationSync/client2.js",
-    "ls3": "node ./src/test/locationSync/client3.js",
-    "ls4": "node ./src/test/locationSync/client4.js"
+    "dist": "nodemon ./servers/distributor/distributor.js",
+    "lobby": "nodemon ./servers/lobby/lobby.js",
+    "matching": "nodemon ./servers/matching/matching.js"
   },
   "keywords": [],
   "author": "BnW-Developers",
   "license": "ISC",
   "dependencies": {
     "async-mutex": "^0.5.0",
+    "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.4",
     "dotenv": "^16.4.5",

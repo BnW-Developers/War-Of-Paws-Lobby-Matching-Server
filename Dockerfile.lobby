@@ -1,0 +1,31 @@
+# Base image with Node.js
+FROM node:20-alpine
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Copy root-level package files
+COPY package*.json ./
+
+# Copy common folder
+COPY common ./common
+
+# Copy environment file
+COPY .dockerenv .env
+
+# Copy lobby server folder
+COPY servers/lobby ./servers/lobby
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Use environment variables from .env for port
+EXPOSE ${LOBBY_PORT}
+
+# Environment variable to specify server
+ENV SERVER_TYPE=lobby
+ENV HOST=${LOBBY_HOST}
+ENV PORT=${LOBBY_PORT}
+
+# Command to run the lobby server
+CMD ["node", "./servers/lobby/lobby.js"]

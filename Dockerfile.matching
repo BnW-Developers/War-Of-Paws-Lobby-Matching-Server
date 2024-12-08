@@ -1,0 +1,31 @@
+# Base image with Node.js
+FROM node:20-alpine
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Copy root-level package files
+COPY package*.json ./
+
+# Copy common folder
+COPY common ./common
+
+# Copy environment file
+COPY .dockerenv .env
+
+# Copy matching server folder
+COPY servers/matching ./servers/matching
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Use environment variables from .env for port
+EXPOSE ${MATCHING_PORT}
+
+# Environment variable to specify server
+ENV SERVER_TYPE=matching
+ENV HOST=${MATCHING_HOST}
+ENV PORT=${MATCHING_PORT}
+
+# Command to run the matching server
+CMD ["node", "./servers/matching/matching.js"]

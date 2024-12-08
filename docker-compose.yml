@@ -1,0 +1,55 @@
+services:
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks:
+      - catndog-network
+
+  distributor:
+    build:
+      context: .
+      dockerfile: Dockerfile.distributor
+    ports:
+      - '${DISTRIBUTOR_PORT}:${DISTRIBUTOR_PORT}'
+    env_file:
+      - .dockerenv
+    networks:
+      - catndog-network
+
+  lobby:
+    build:
+      context: .
+      dockerfile: Dockerfile.lobby
+    ports:
+      - '${LOBBY_PORT}:${LOBBY_PORT}'
+    env_file:
+      - .dockerenv
+    networks:
+      - catndog-network
+    depends_on:
+      - redis
+
+  matching:
+    build:
+      context: .
+      dockerfile: Dockerfile.matching
+    ports:
+      - '${MATCHING_PORT}:${MATCHING_PORT}'
+    env_file:
+      - .dockerenv
+    networks:
+      - catndog-network
+    depends_on:
+      - redis
+
+networks:
+  catndog-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

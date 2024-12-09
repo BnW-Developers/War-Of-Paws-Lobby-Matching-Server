@@ -111,7 +111,7 @@ class C2LEventHandler {
       if (socket.authTimeout) {
         clearTimeout(socket.authTimeout);
       }
-      const key = `${socket.remoteAddress}:${socket.remotePort}`;
+      const key = socket.userId;
       const timestamp = Date.now();
       this.connectSessionManager.removeConnect(socket);
 

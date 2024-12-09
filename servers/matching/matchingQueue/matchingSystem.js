@@ -273,16 +273,18 @@ class MatchingSystem {
       }
 
       // apikey 암호화
-      const apikey = await bcrypt.hash(config.auth.apiKey, 10);
-      const response = await axios.get(
+      const apikey = await bcrypt.hash(config.auth.apiKey, saltRounds);
+      const response = await axios.post(
         `http://${config.healthcheck.host}:${config.healthcheck.port}${config.healthcheck.uri}`,
+        {
+          users: [
+            { userId: user1Id, species: 'cat' },
+            { userId: user2Id, species: 'dog' },
+          ],
+        },
         {
           headers: {
             authorization: apikey,
-          },
-          params: {
-            user1: user1Id,
-            user2: user2Id,
           },
         },
       );

@@ -1,6 +1,12 @@
 import { COMMON_CONFIG } from '../../../common/config/config.js';
 import { PACKET_TYPE } from '../../../common/constants/header.js';
-import { MATCHING_HOST, MATCHING_PORT } from '../constants/env.js';
+import {
+  HEALTHCHECK_HOST,
+  HEALTHCHECK_PORT,
+  HEALTHCHECK_URI,
+  MATCHING_HOST,
+  MATCHING_PORT,
+} from '../constants/env.js';
 
 const config = {
   ...COMMON_CONFIG,
@@ -13,6 +19,11 @@ const config = {
     PACKET_TYPE.MATCH_NOTIFICATION,
     PACKET_TYPE.MATCH_CANCEL_REQUEST,
   ],
+  healthcheck: {
+    host: HEALTHCHECK_HOST,
+    port: HEALTHCHECK_PORT,
+    uri: HEALTHCHECK_URI,
+  },
 };
 
 export default config;

@@ -4,6 +4,7 @@ import { handleErr } from '../../../common/error/handlerErr.js';
 import redisClient from '../../../common/redis/redisClient.js';
 import logger from '../../../common/utils/logger/logger.js';
 import { createServerPacket } from '../../../common/utils/packet/createPacket.js';
+import config from '../config/matching.config.js';
 
 class MatchingSystem {
   #config = {
@@ -257,12 +258,15 @@ class MatchingSystem {
 
   async #requestHealthcheckServer(user1Id, user2Id) {
     try {
-      const response = await axios.get('http://localhost:3000/check/availableSvr', {
-        params: {
-          user1: user1Id,
-          user2: user2Id,
+      const response = await axios.get(
+        `http://${config.healthcheck.host}:${config.healthcheck.port}${config.healthcheck.uri}`,
+        {
+          params: {
+            user1: user1Id,
+            user2: user2Id,
+          },
         },
-      });
+      );
 
       const gameServerPort = response.data.port;
 

@@ -1,11 +1,13 @@
 import { COMMON_CONFIG } from '../../../common/config/config.js';
 import { PACKET_TYPE } from '../../../common/constants/header.js';
 import {
+  API_KEY,
   HEALTHCHECK_HOST,
   HEALTHCHECK_PORT,
   HEALTHCHECK_URI,
   MATCHING_HOST,
   MATCHING_PORT,
+  SALT,
 } from '../constants/env.js';
 
 const config = {
@@ -23,6 +25,10 @@ const config = {
     host: HEALTHCHECK_HOST,
     port: HEALTHCHECK_PORT,
     uri: HEALTHCHECK_URI,
+  },
+  auth: {
+    apiKey: API_KEY,
+    salt: SALT,
   },
 };
 

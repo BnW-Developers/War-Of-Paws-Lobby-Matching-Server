@@ -5,6 +5,7 @@ import redisClient from '../../../common/redis/redisClient.js';
 import logger from '../../../common/utils/logger/logger.js';
 import { createServerPacket } from '../../../common/utils/packet/createPacket.js';
 import config from '../config/matching.config.js';
+import bcrypt from 'bcryptjs';
 
 class MatchingSystem {
   #config = {
@@ -258,9 +259,27 @@ class MatchingSystem {
 
   async #requestHealthcheckServer(user1Id, user2Id) {
     try {
+      // salt 값을 숫자로 변환
+      let saltRounds = config.auth.salt;
+
+      // 문자열 타입인 경우 숫자로 변환
+      if (typeof saltRounds === 'string') {
+        saltRounds = parseInt(saltRounds, 10);
+      }
+
+      // 변환 후 유효한 숫자인지 확인
+      if (isNaN(saltRounds) || saltRounds <= 0) {
+        throw new Error(`Invalid salt rounds value: ${config.auth.salt}`);
+      }
+
+      // apikey 암호화
+      const apikey = await bcrypt.hash(config.auth.apiKey, 10);
       const response = await axios.get(
         `http://${config.healthcheck.host}:${config.healthcheck.port}${config.healthcheck.uri}`,
         {
+          headers: {
+            authorization: apikey,
+          },
           params: {
             user1: user1Id,
             user2: user2Id,
@@ -268,7 +287,7 @@ class MatchingSystem {
         },
       );
 
-      const gameServerPort = response.data.port;
+      const gameServerPort = response.data.svrPort;
 
       logger.info(`Game Server port recived: ${gameServerPort}`);
 

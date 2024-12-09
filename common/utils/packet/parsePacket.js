@@ -3,6 +3,31 @@ import { PACKET_TYPE_REVERSED } from '../../constants/header.js';
 import { GamePacket } from '../../protobuf/loadProto.js';
 import { snakeToCamel } from './../formatters/snakeToCamel.js';
 
+/**
+ * 패킷 명세:
+ */
+
+export const parseC2LobbyInitPacket = (socket) => {
+  // 클라이언트로 부터 받은 init 패킷 파싱
+  let offset = 0;
+
+  // tokenLength
+  if (socket.buffer.length < offset + config.packet.client.tokenLength) return null;
+  const tokenLength = socket.buffer.readUInt16BE(offset);
+  offset += config.packet.client.tokenLength;
+
+  // token
+  if (socket.buffer.length < offset + tokenLength) return null;
+  const token = socket.buffer.subarray(offset, offset + tokenLength).toString();
+  offset += tokenLength;
+
+  // 남은 버퍼를 업데이트
+  socket.buffer = socket.buffer.subarray(offset);
+
+  console.log('token: ', token);
+  return token;
+};
+
 export const parseC2LobbyPacket = (socket) => {
   // 클라이언트로 부터 받은 패킷 파싱
 

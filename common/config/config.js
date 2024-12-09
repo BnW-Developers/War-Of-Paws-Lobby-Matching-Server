@@ -22,6 +22,7 @@ import {
   PACKET_SEQUENCE,
   PACKET_TYPE_LENGTH,
   PACKET_VERSION_LENGTH,
+  TOKEN_LENGTH,
 } from '../constants/header.js';
 
 export const COMMON_CONFIG = {
@@ -38,6 +39,7 @@ export const COMMON_CONFIG = {
       versionLength: PACKET_VERSION_LENGTH,
       sequence: PACKET_SEQUENCE,
       payloadLength: PACKET_PAYLOAD_LENGTH,
+      tokenLength: TOKEN_LENGTH,
     },
     server: {
       typeLength: PACKET_TYPE_LENGTH,

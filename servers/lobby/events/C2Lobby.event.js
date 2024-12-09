@@ -1,7 +1,10 @@
 import logger from '../../../common/utils/logger/logger.js';
 import config from '../config/lobby.config.js';
 import PacketRouter from '../route/packetRouter.js';
-import { parseC2LobbyPacket } from '../../../common/utils/packet/parsePacket.js';
+import {
+  parseC2LobbyInitPacket,
+  parseC2LobbyPacket,
+} from '../../../common/utils/packet/parsePacket.js';
 import jwt from 'jsonwebtoken';
 import { SECRET_KEY } from '../constants/env.js';
 import redisClient from './../../../common/redis/redisClient.js';
@@ -33,24 +36,6 @@ class C2LEventHandler {
           socket.end();
         }
       }, 10 * 1000); // 10초 타임아웃
-
-      // 임시
-      this.connectSessionManager.addConnect(socket);
-      socket.isAuthenticated = true;
-      // 원래 Auth 서버에서 해야하는데 임시로 여기서 함
-      // id는 key로 대충 쓰자
-      const sessionKey = `user:session:${key}`;
-      const userInfo = {
-        socketId: key,
-        isLoggedIn: true,
-        isMatchmaking: false,
-        currentGameId: '',
-        currentSpecies: '',
-      };
-
-      await redisClient.hmset(sessionKey, userInfo);
-      await redisClient.expire(sessionKey, 3600);
-      clearTimeout(socket.authTimeout);
     } catch (err) {
       console.error('Gate onConnection 오류', err);
       socket.end();
@@ -65,15 +50,18 @@ class C2LEventHandler {
       // 최초 패킷에서 JWT 토큰 검증
       if (!socket.isAuthenticated) {
         // TODO: 첫 패킷에서 보낸 토큰 꺼내오기
-        const token = null;
+        const token = parseC2LobbyInitPacket(socket);
 
         if (token) {
           try {
             // JWT 토큰 검증
             const decodedToken = jwt.verify(token, SECRET_KEY);
+            const userId = decodedToken.userId;
 
-            // TODO Redis에서 유저 정보 확인
-            const userInfo = null;
+            const sessionKey = `user:session:${userId}`;
+
+            // Redis에서 유저 정보 확인
+            const userInfo = await redisClient.exists(sessionKey);
 
             if (userInfo) {
               // 인증 성공 처리

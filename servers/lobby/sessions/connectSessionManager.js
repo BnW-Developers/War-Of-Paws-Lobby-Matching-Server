@@ -4,7 +4,7 @@ class ConnectSessionManager {
   }
 
   addConnect(socket) {
-    const key = socket.remoteAddress + ':' + socket.remotePort;
+    const key = socket.userId;
     this.connectSession.set(key, { socket: socket, sequence: 1 });
   }
 

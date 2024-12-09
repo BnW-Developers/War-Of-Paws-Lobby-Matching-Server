@@ -56,7 +56,7 @@ class PacketRouter {
     if (selectedService) {
       try {
         // 서버로 보내는 패킷 생성
-        const key = `${socket.remoteAddress}:${socket.remotePort}`;
+        const key = socket.userId;
         const serverPacket = createServerPacket(packet.packetType, key, packet.payload);
 
         // 패킷을 선택된 마이크로서비스로 전달

@@ -1,13 +1,12 @@
 import logger from '../../../common/utils/logger/logger.js';
 import config from '../config/lobby.config.js';
 import PacketRouter from '../route/packetRouter.js';
-import {
-  parseC2LobbyInitPacket,
-  parseC2LobbyPacket,
-} from '../../../common/utils/packet/parsePacket.js';
+import { getDecodedPayload, parseC2LobbyPacket } from '../../../common/utils/packet/parsePacket.js';
 import jwt from 'jsonwebtoken';
 import { SECRET_KEY } from '../constants/env.js';
 import redisClient from './../../../common/redis/redisClient.js';
+import { PACKET_TYPE } from '../../../common/constants/header.js';
+import { createL2CPacket } from '../../../common/utils/packet/createPacket.js';
 
 /**
  * 클라이언트(유저)가 게이트로 연결을 맺고 요청을 보낼 때를 정의
@@ -50,7 +49,13 @@ class C2LEventHandler {
       // 최초 패킷에서 JWT 토큰 검증
       if (!socket.isAuthenticated) {
         // TODO: 첫 패킷에서 보낸 토큰 꺼내오기
-        const token = parseC2LobbyInitPacket(socket);
+        const { packetType, payload } = parseC2LobbyPacket(socket);
+
+        if (packetType !== PACKET_TYPE.AUTH_REQUEST) {
+          return;
+        }
+
+        const token = getDecodedPayload(packetType, payload);
 
         if (token) {
           try {

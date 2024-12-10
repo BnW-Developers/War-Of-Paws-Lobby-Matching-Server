@@ -238,7 +238,8 @@ class MatchingSystem {
     try {
       const createNotificationPacket = (userId, opponentId) =>
         createServerPacket(PACKET_TYPE.MATCH_NOTIFICATION, userId, {
-          opponentId: `Port: ${gameServerPort}, Enemy: ${opponentId}`,
+          opponentId: opponentId,
+          port: gameServerPort,
         });
 
       const packet1 = createNotificationPacket(user1Id, user2Id);

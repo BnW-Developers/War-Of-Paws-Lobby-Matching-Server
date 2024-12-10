@@ -211,6 +211,7 @@ message C2SMatchRequest {
 
 message S2CMatchNotification {
   string opponentId = 1;
+  int32 port = 2;
 }
 
 message C2SMatchCancelRequest {

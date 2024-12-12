@@ -17,7 +17,7 @@ COPY .dockerenv .env
 COPY servers/distributor ./servers/distributor
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Use environment variables from .env for port
 EXPOSE ${DISTRIBUTOR_PORT}

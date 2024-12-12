@@ -50,13 +50,13 @@ class C2LEventHandler {
       if (!socket.isAuthenticated) {
         // TODO: 첫 패킷에서 보낸 토큰 꺼내오기
         const { packetType, payload } = parseC2LobbyPacket(socket);
-
+	console.log(`packetType: ${packetType}, payload: ${payload}`);
         if (packetType !== PACKET_TYPE.AUTH_REQUEST) {
           return;
         }
 
-        const token = getDecodedPayload(packetType, payload);
-
+        const { token } = getDecodedPayload(packetType, payload);
+	console.log(`token: ${token}`);
         if (token) {
           try {
             // JWT 토큰 검증

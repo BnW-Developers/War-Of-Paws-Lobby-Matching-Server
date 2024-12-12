@@ -78,6 +78,8 @@ class C2LEventHandler {
               this.connectSessionManager.addConnect(socket);
 
               logger.info(`클라이언트 인증 성공: ${socket.userId}`);
+              redisClient.hset(sessionKey, 'isLoggedIn', true);
+              redisClient.expire(sessionKey, 3600);
             }
           } catch (err) {
             logger.warn(`인증 실패: ${err.message}`);
@@ -119,6 +121,10 @@ class C2LEventHandler {
       const key = socket.userId;
       const timestamp = Date.now();
       this.connectSessionManager.removeConnect(socket);
+
+      const sessionKey = `user:session:${key}`;
+      redisClient.hset(sessionKey, 'isLoggedIn', false);
+      redisClient.expire(300);
 
       // 유저 접속 종료 Pub
       redisClient.publish(

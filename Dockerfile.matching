@@ -24,8 +24,6 @@ EXPOSE ${MATCHING_PORT}
 
 # Environment variable to specify server
 ENV SERVER_TYPE=matching
-ENV HOST=${MATCHING_HOST}
-ENV PORT=${MATCHING_PORT}
 
 # Command to run the matching server
 CMD ["node", "./servers/matching/matching.js"]

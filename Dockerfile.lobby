@@ -24,8 +24,6 @@ EXPOSE ${LOBBY_PORT}
 
 # Environment variable to specify server
 ENV SERVER_TYPE=lobby
-ENV HOST=${LOBBY_HOST}
-ENV PORT=${LOBBY_PORT}
 
 # Command to run the lobby server
 CMD ["node", "./servers/lobby/lobby.js"]

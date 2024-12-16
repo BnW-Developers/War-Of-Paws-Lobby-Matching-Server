@@ -24,8 +24,6 @@ EXPOSE ${DISTRIBUTOR_PORT}
 
 # Environment variable to specify server
 ENV SERVER_TYPE=distributor
-ENV HOST=${DISTRIBUTOR_HOST}
-ENV PORT=${DISTRIBUTOR_PORT}
 
 # Command to run the distributor server
 CMD ["node", "./servers/distributor/distributor.js"]

@@ -54,16 +54,16 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             # docker-compose.yml 파일을 클라우드 서버로 복사
-            scp -i ${{ secrets.SSH_PRIVATE_KEY }} docker-compose.yml ${{ secrets.GCP_USERNAME }}@${{ secrets.GCP_HOST }}:/home/${{ secrets.GCP_USERNAME }}
+            scp -i ${{ secrets.SSH_PRIVATE_KEY }} docker-compose.yml ${{ secrets.GCP_USERNAME }}@${{ secrets.GCP_HOST }}:/home/${{ secrets.GCP_USERNAME }}/War-Of-Paws-Lobby-Matching-Server
 
             # 기존 컨테이너 제거
-            sudo docker-compose -f /home/${{ secrets.GCP_USERNAME }}/docker-compose.yml down || true
+            sudo docker-compose -f /home/${{ secrets.GCP_USERNAME }}/War-Of-Paws-Lobby-Matching-Server/docker-compose.yml down || true
 
             # Docker Hub에서 최신 이미지 pull
-            sudo docker-compose -f /home/${{ secrets.GCP_USERNAME }}/docker-compose.yml pull
+            sudo docker-compose -f /home/${{ secrets.GCP_USERNAME }}/War-Of-Paws-Lobby-Matching-Server/docker-compose.yml pull
 
             # 새 컨테이너 실행
-            sudo docker-compose -f /home/${{ secrets.GCP_USERNAME }}/docker-compose.yml up -d
+            sudo docker-compose -f /home/${{ secrets.GCP_USERNAME }}/War-Of-Paws-Lobby-Matching-Server/docker-compose.yml up -d
 
             # 안쓰는 이미지 삭제
             sudo docker image prune

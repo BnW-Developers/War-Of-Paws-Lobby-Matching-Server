@@ -11,7 +11,7 @@ COPY package*.json ./
 COPY common ./common
 
 # Copy environment file
-COPY .dockerenv .env
+COPY .env .env
 
 # Copy matching server folder
 COPY servers/matching ./servers/matching

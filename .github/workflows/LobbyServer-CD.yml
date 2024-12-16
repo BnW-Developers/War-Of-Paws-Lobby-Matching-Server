@@ -21,7 +21,7 @@ jobs:
       # 환경 파일 생성
       - name: Create .env file
         run: |
-          echo "${{ secrets.ENV_FILE }}" | base64 -d > .dockerenv
+          echo "${{ secrets.ENV_FILE }}" | base64 -d > .env
 
       # Docker Hub에 로그인
       - name: Login to Docker Hub
@@ -53,11 +53,6 @@ jobs:
           username: ${{ secrets.GCP_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "GCP_USERNAME is set to: ${{ secrets.GCP_USERNAME }}"
-
-            # docker-compose.yml 파일을 클라우드 서버로 복사
-            scp -i ${{ secrets.SSH_PRIVATE_KEY }} docker-compose.yml ${{ secrets.GCP_USERNAME }}@${{ secrets.GCP_HOST }}:/home/${{ secrets.GCP_USERNAME }}/War-Of-Paws-Lobby-Matching-Server
-
             # 기존 컨테이너 제거
             sudo docker-compose -f /home/${{ secrets.GCP_USERNAME }}/War-Of-Paws-Lobby-Matching-Server/docker-compose.yml down || true
 

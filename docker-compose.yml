@@ -6,7 +6,7 @@ services:
     ports:
       - '${DISTRIBUTOR_PORT}:${DISTRIBUTOR_PORT}'
     env_file:
-      - .dockerenv
+      - .env
     networks:
       - catndog-network
 
@@ -17,7 +17,7 @@ services:
     ports:
       - '${LOBBY_PORT}:${LOBBY_PORT}'
     env_file:
-      - .dockerenv
+      - .env
     networks:
       - catndog-network
 
@@ -28,11 +28,10 @@ services:
     ports:
       - '${MATCHING_PORT}:${MATCHING_PORT}'
     env_file:
-      - .dockerenv
+      - .env
     networks:
       - catndog-network
 
 networks:
   catndog-network:
     driver: bridge
-

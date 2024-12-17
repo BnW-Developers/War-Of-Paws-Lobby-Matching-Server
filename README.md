@@ -60,7 +60,7 @@
 ---
 
 ## 🛠️ 기술 스택
-### 🖥️ 기술
+### 🖥️ 주요 기술
 <img src="https://shields.io/badge/JavaScript-F7DF1E?logo=JavaScript&logoColor=000&style=flat-square" style="height : 25px; margin-left : 10px; margin-right : 10px;"/> 
 <img src="https://shields.io/badge/Node.js-339933?logo=Node.js&logoColor=fff&style=flat-square" style="height : 25px; margin-left : 10px; margin-right : 10px;"/> 
 <img src="https://shields.io/badge/Axios-5A29E4?logo=Axios&logoColor=fff&style=flat-square" style="height : 25px; margin-left : 10px; margin-right : 10px;"/> 
